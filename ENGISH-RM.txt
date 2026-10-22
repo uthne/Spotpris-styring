@@ -1,0 +1,71 @@
+*************************************************************************
+ESP32 DevKit C – Automatic electricity control by spot-price
+*************************************************************************
+
+This is a program for the ESP32 DevKit C for controlling electrical equipment, appliances and chargers based on price pr kWh in Norway. The program and README.txt is written in Norwegian.
+
+ENGLISH-RM.txt:                       This text file.
+README.txt:                           Norwegian readme file. 
+Spotpris-styring-eps32-wifi.ino:      Program code written in C++ for Arduino IDE.
+README_RTC.txt:                       Norwegian readme file for the Real Time Clock version.
+Spotpris-styring-eps32-wifi_RTC.ino:  Real Time Clock version written in C++ for Arduino IDE.
+
+
+
+The program fetches a JSON-file from the https://api.strompriseridag.no/v1/*** containing prices hour by hour. The JSON also contains a section called "cheapest_windows". 
+
+Control is done with GPIO-pin 26 which is active HIGH during cheapest-hours windows, and can be connected to a driver for a relay.
+
+There are four different endpoints (marked as *** in the URL) on the to chose from, NO1, NO2, NO3, NO4 and NO5. These endpoints represents 5 different regions on the electrical grid in Norway.
+
+After fetching the JSON file the program checks if there are consecutive hours of "cheapest energy" matching the selected numer of hours. If the number of continuous hours defined in "cheapest_windows" are less then the desired number, the program will parse hourly prices to find the cheapest hours to match the desired numbers of consecutive hours.
+
+The program will check this window for "today" and "tomorrow". It will obtain the JSON for "tomorrow" after 13 o'clock in the afternoon
+
+The window of cheapest hours are saved in flash memory for today and tomorrow, while hourly prices are kept in memory. At midnight cheapest hours for today is swapped with hours for tomorrow. 
+
+The program will store data from the endpoint chosen in a separate name-space to avoid mixing up data when switching endpoint. (Switching of endpoints should not be a regular occurrence - but still…)
+
+All this is done to keep WiFi activity as low as possible.
+
+On first startup the program will spin up a WiFi access point with a wifi-manager. By connecting to the access point shown on the OLED screen from a computer or phone you will be directed to the WiFi manager (on IP-address 192.168.4.1). In the WiFi manager you can provide the credentials for your local WiFi, choose the regional endpoint aned set number of active hours. 
+
+You can activate the access point and the wifi-manager at any time by holding the button connected to GPIO32 for 3 seconds. The access-point has a timeout of 5 minutes if there is no activity.
+
+While the wifi manager is active the OLED will display (in Norwegian):
+
+*******OLED SCREEN*******
+WIFI SETUP
+---------------------
+Connect to:
+[ACCESSPOINT NAME]
+Pass: [PASSWORD]
+IP: 192.168.4.1
+*************************
+
+
+During normal operation the OLED screen will display the status of the system. Display is In Norwegian but [TRANSLATED] to:
+
+*******OLED SCREEN*******
+NO1 [REGION]      14:25
+-----------------------
+[PRICE]: 0.94 kr/kWh
+
+[TODAY]:    13:00-17:00
+[TOMORROW]: 02:00-06:00
+[ACTIVE]           WiFi
+*************************
+
+It will display the current price in NOK / kWh
+The cheapest window today
+The cheapest window tomorrow 
+If GPIO-pin 26 is ACTIVE (high) or INACTIVE (low)
+and WiFi status (WiFi / OFF)
+
+The OLED screen will go into screensaver after two minutes to be woken up bu short press on the button connected to GPIO32, or when WiFi-manager is closed.
+
+GPIO-pin 26 is active HIGH during cheapest-hours windows, and active LOW for the rest of the time.
+
+
+
+The Real Time Clock version includes the use of a DS3231 RTC. Using the RTC module enable the program to resume operation based on internal time and stored "cheapest windows" in flash memory, even before WiFi signal is obtained. The Real Time Clock will be synced with online time service NTC once every day, and on startup/restart.
